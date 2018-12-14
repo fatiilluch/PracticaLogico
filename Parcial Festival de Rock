@@ -1,0 +1,140 @@
+anioActual(2015).
+%festival(nombre, lugar, bandas, precioBase).
+%lugar(nombre, capacidad).
+festival(lulapaluza, lugar(hipodromo,40000), [miranda, paulMasCarne, muse], 500).
+festival(mostrosDelRock, lugar(granRex, 10000), [kiss, judasPriest, blackSabbath], 1000).
+festival(personalFest, lugar(geba, 5000), [tanBionica, miranda, muse, pharrellWilliams], 300).
+festival(cosquinRock, lugar(aerodromo, 2500), [erucaSativa, laRenga], 400).
+
+%banda(nombre, año, nacionalidad, popularidad).
+banda(paulMasCarne,1960, uk, 70).
+banda(muse,1994, uk, 45).
+banda(kiss,1973, us, 63).
+banda(erucaSativa,2007, ar, 60).
+banda(judasPriest,1969, uk, 91).
+banda(tanBionica,2012, ar, 71).
+banda(miranda,2001, ar, 38).
+banda(laRenga,1988, ar, 70).
+banda(blackSabbath,1968, uk, 96).
+banda(pharrellWilliams,2014, us, 85).
+
+%entradasVendidas(nombreDelFestival, tipoDeEntrada, cantidadVendida).
+% tipos de entrada: campo, plateaNumerada(numero de fila), plateaGeneral(zona).
+entradasVendidas(lulapaluza,campo, 600).
+entradasVendidas(lulapaluza,plateaGeneral(zona1), 200).
+entradasVendidas(lulapaluza,plateaGeneral(zona2), 300).
+entradasVendidas(mostrosDelRock,campo,20000).
+entradasVendidas(mostrosDelRock,plateaNumerada(1),40).
+entradasVendidas(mostrosDelRock,plateaNumerada(2),0).
+
+% … y asi para todas las filas
+entradasVendidas(mostrosDelRock,plateaNumerada(10),25).
+entradasVendidas(mostrosDelRock,plateaGeneral(zona1),300).
+entradasVendidas(mostrosDelRock,plateaGeneral(zona2),500).
+plusZona(hipodromo, zona1, 55).
+plusZona(hipodromo, zona2, 20).
+plusZona(granRex, zona1, 45).
+plusZona(granRex, zona2, 30).
+plusZona(aerodromo, zona1, 25).
+
+esNacional(laRenga).
+esNacional(tanBionica).
+esNacional(erucaSativa).
+esNacional(miranda).
+
+
+1)  estaDeModa/1. Se cumple para las bandas recientes (que surgieron en los últimos 5 años) que tienen una popularidad mayor a 70.
+
+?- estaDeModa(Banda).
+Banda = tanBionica ;
+Banda = pharrellWilliams.
+
+estaDeModa(Banda):- banda(Banda,Año,_,Popularidad),esBandaReciente(Banda,Año), Popularidad >= 70.                         
+esBandaReciente(_,Año):- anioActual(Año), estaEntre(2010,2015,Año).
+estaEntre(Min, Max, Año) :- Min < Año, Max > Año.
+
+						       
+2) esCareta/1. Se cumple para todo festival que cumpla alguna de las siguientes condiciones:
+
+que participen al menos 2 bandas que estén de moda.
+que no tenga entradas razonables (ver punto 3).
+si toca Miranda.
+?- esCareta(Festival).
+
+Festival = personalFest ;
+
+Festival = ...
+
+esCareta(Festival):- festival(Festival,_,_,_),participanAlMenosDosBandas(Banda1,Banda2),estaDeModa(Banda1),estaDeModa(Banda2).
+participanAlMenosDosBandas(Banda1,Banda2):- banda(Banda1,_,_,_),banda(Banda2,_,_,_),Banda1 \= Banda2. 
+esCareta(Festival):- festival(Festival,_,_,_),not(entradaRazonable(Festival,_)).
+esCareta(Festival):- festival(Festival,_,_,_), banda(Miranda,_,_,_).
+
+3) entradaRazonable/2. Relaciona un festival con una entrada del mismo si se cumple:
+
+para la platea general, si el plus de la zona es menos del 10% del precio de la entrada.
+para campo, el precio de la entrada es menor a la popularidad total del festival. La popularidad total es la suma de la popularidad de todas las bandas que participan.
+para la platea numerada, si ninguna de las bandas que tocan está de moda, el precio no puede superar los $750; de lo contrario, el precio deberá ser menor a la capacidad del estadio / la popularidad total del festival.
+
+Los precios de las distintas entradas se calculan de la siguiente forma:
+
+precio de campo: Es el precio base del festival.
+precio de platea numerada: Precio base + 200 / número de fila.
+precio de platea general: El precio base + plus de la zona.
+?- entradaRazonable(Festival,Entrada).
+
+Festival=lulapaluza,
+
+Entrada=plateaGeneral(zona2);
+
+Festival=...
+
+/* entradaRazonable(Festival,Entrada):- precioDeCadaEntrada(plateaGeneral(_),Entrada),plusZona(_,_,Plus), Plus < Entrada. /*
+
+entradaRazonable(Festival,Entrada):- precioDeCadaEntrada(campo,Entrada),popularidadTotalDelFestival(Festival,Popularidad), Entrada < Popularidad.
+entradaRazonable(Festival,Entrada):- precioDeCadaEntrada(plateaNumerada(_),Entrada),not(forall(estaDeModa(Banda),festival(Festival,_,BandasQueTocan,_))),member(BandasQueTocan,Banda), Entrada =< 750.
+entradaRazonable(Festival,Entrada):- festival(Festival,lugar(_,Capacidad),_,_),precioDeCadaEntrada(plateaNumerada(_),Entrada),forall(estaDeModa(Banda),festival(_,_,BandasQueTocan,_)), member(BandasQueTocan,Banda),popularidadTotalDelFestival(Festival,Popularidad),Entrada < Capacidad/Popularidad.
+popularidadTotalDelFestival(Festival,Popularidad):- festival(Festival,_,_,_),banda(BandaQueParticipa,_,_,PopularidadDeLaBanda),findall(PopularidadDeLaBanda,festival(Festival,_,BandasQueParticipan,_),sumaDePopularidades),member(BandasQueParticipan,BandaQueParticipa),sumlist(sumaDePopularidades,Popularidad).
+precioDeCadaEntrada(_,Precio):- entrada(_,campo),festival(_,_,_,PrecioBase), Precio is PrecioBase.
+entrada(Precio,Sector).
+precioDeCadaEntrada(_,Precio):- entrada(_,plateaNumerada(NumeroDeFila)),festival(_,_,_,PrecioBase),Precio is (PrecioBase+200)/NumeroDeFila.
+precioDeCadaEntrada(_,Precio):- entrada(_,plateaGeneral(Zona)),plusZona(_,Zona,Plus),festival(_,_,_,PrecioBase),Precio is (PrecioBase+Plus).
+	
+4) nacanpop/1. Se cumple para un festival si todas las bandas que participan del mismo son nacionales y alguna de
+
+sus entradas disponibles es razonable.
+
+?- nacandpop(Festival).
+
+Festival =cosquinRock.
+
+nacanpop(Festival):- member(BandasQueParticipan,Banda),forall(esNacional(Banda),festival(Festival,_,BandasQueParticipan,_)),entradaRazonable(Festival,_).
+
+5) recaudacion/2. Relaciona un festival con su recaudación, que se calcula como la suma del precio de todas las entradas vendidas (multiplicar el valor de una entrada por la cantidad vendida de la misma).
+
+?- recaudacion(Festival,Total).
+
+Festival = lulapaluza,
+
+Total = 567000 ;
+
+Festival = mostrosDelRock,
+
+Total = 20879500 ...
+
+recaudacion(Festival,Total):- festival(Festival,_,_,_),sumaDelPrecioDeTodasLasEntradasVendidas(_,Total).
+sumaDelPrecioDeTodasLasEntradasVendidas(Festival,Total):- entrada(Precio,_),festival(Festival,_,_,_),entradasVendidas(_,_,CantVendida), Total is Precio*CantVendida.
+
+
+6) estaBienPlaneado/1. Se cumple si las bandas que participan van creciendo en popularidad, y la banda que cierra el festival (es decir, la última) es legendaria.
+
+Una banda es legendaria cuando surgió antes de 1980, es internacional y tiene una popularidad mayor a la de todas las bandas de moda.
+
+?- estaBienPlaneado(Festival).
+
+Festival=mostrosDelRock.
+
+estaBienPlaneado(Festival):- banda(Banda,_,_,_),festival(Festival,_,BandasQueParticipan,_),vanCreciendoEnPopularidad(_,BandasQueParticipan),bandaQueCierraElFestival(Banda), member(BandasQueParticipan,Banda).
+bandaQueCierraElFestival(Banda):- esLegendaria(Banda).
+esLegendaria(Banda):- banda(Banda,Año,Internacional,Popularidad), Año <	1980, tienePopularidadMayor(Popularidad,_).
+tienePopularidadMayor(PopularidadMayor,PopularidadMenor):- banda(Banda,_,_,PopularidadMayor),forall(banda(Banda,_,_,PopularidadMenor),estaDeModa(Banda)),PopularidadMayor > PopularidadMenor.
