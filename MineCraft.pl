@@ -53,11 +53,21 @@ estaEntre(Min, Max, Valor) :- Min < Valor, Max > Valor.
    %%                            findall().
 
 
-puedeConstruir(Jugador, Item) :- jugador(Jugador, _, _),
-                                 item(Item, [tipoDeItem(Elemento,CantidadX)]),
-                                 findall(Elemento, (jugador(Jugador,_,_), tieneItem(Jugador, Elemento)), Elementos),
-                                 length(Elementos, Cantidad),
-                                 CantidadX =< Cantidad.
+puedeConstruir(Jugador, Item) :- jugador(Jugador, Items, _),
+                                 item(Item, Necesarios),
+                                 forall(member(Miembro, Necesarios), estanEn(Items, Miembro)).
+
+estanEn(Items, itemSimple(Item, Cant)) :-
+    findall(Item, member(Item, Items), Cosas),
+    length(Cosas, CantCosas),
+    CantCosas >= Cant.
+
+estanEn(Items, itemCompuesto(Item)) :-
+    member(Item, Items).
+
+estanEn(Items, itemCompuesto(Item)) :-
+    item(Item, Necesarios),
+    forall(member(Miembro, Necesarios), estanEn(Items, Miembro)).
 
 tipoDeItem(Material, Cantidad) :- itemSimple(Material, Cantidad).
 tipoDeItem(Material, _) :- itemCompuesto(Material).
@@ -78,3 +88,4 @@ jugador(steve, [madera, carbon, carbon, diamante, panceta, panceta, panceta], 2)
 %    8 unidades de piedra.
 % Puede requerir un ítem compuesto, que se debe construir a partir de
 % otros (una única unidad).
+
