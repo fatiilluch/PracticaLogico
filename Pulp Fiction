@@ -1,0 +1,74 @@
+personaje(pumkin,ladron([licorerias, estacionesDeServicio])).
+personaje(honeyBunny,ladron([licorerias, estacionesDeServicio])).
+personaje(vincent,mafioso(maton)).
+personaje(jules,mafioso(maton)).
+personaje(marsellus,mafioso(capo)).
+personaje(winston,mafioso(resuelveProblemas)).
+personaje(mia,actriz([foxForceFive])).
+personaje(butch,boxeador).
+
+pareja(marsellus,mia).
+pareja(pumkin,honeyBunny).
+
+amigo(vicent,jules).
+amigo(jules,jimmie).
+amigo(vicent,elVendedor).
+
+%trabajaPara(Empleador, Empleado)
+trabajaPara(marsellus,vincent).
+trabajaPara(marsellus,jules).
+trabajaPara(marsellus,winston).
+
+actividadPeligrosa(serMaton).
+actividadPeligrosa(robarLicorerias).
+
+%encargo(Solicitante, Encargado, Tarea). 
+%las tareas pueden ser cuidar(Protegido), ayudar(Ayudado), buscar(Buscado, Lugar)
+encargo(marsellus, vincent,   cuidar(mia)).
+encargo(vincent,  elVendedor, cuidar(mia)).
+encargo(marsellus, winston, ayudar(jules)).
+encargo(marsellus, winston, ayudar(vincent)).
+encargo(marsellus, vincent, buscar(butch, losAngeles)).
+
+
+esPeligroso(Personaje):- realizaActividadPeligrosa(Personaje,_), tieneEmpleadosPeligrosos(Personaje,_).
+realizaActividadPeligrosa(Personaje,Actividad):- personaje(Personaje,_),actividadPeligrosa(Actividad).
+tieneEmpleadosPeligrosos(Personaje,Empleado):- personaje(Personaje,_),trabajaPara(Personaje,Empleado).
+
+duoTemible(Personaje1,Personaje2):- esPeligroso(Personaje1),esPeligroso(Personaje2), pareja(Personaje1,Personaje2).
+duoTemible(Personaje1,Personaje2):- esPeligroso(Personaje1),esPeligroso(Personaje2), amigo(Personaje1,Personaje2).
+
+estaEnProblemas(Personaje):- personaje(Personaje,_),esPeligroso(Jefe),leEncargaCuidarASuPareja(Jefe,Personaje).
+leEncargaQueCuideASuPareja(Jefe,Personaje):- encargo(Jefe,Personaje,cuidar(Pareja)),pareja(Jefe,Pareja),estaEnProblemas(Butch).
+
+sanCayetano(Alguien):- alguien(Alguien),tieneCerca(Personaje),leDaTrabajo(Alguien,Personaje).
+leDaTrabajo(Alguien,Personaje):- encargo(Alguien,Personaje,_).
+tieneCerca(Alguien,Personaje):- amigo(Alguien,Personaje).
+tieneCerca(Alguien,Personaje):- empleado(Alguien,Personaje).
+
+masAtareado(Personaje):- personaje(Personaje,_),encargo(_,_,Encargo), findall(Encargo, encargo(_,Personaje,_),ListaDeEncargos),length(ListaDeEncargos,Encargo),personaje(Personaje2,_),encargo(_,_,Encargo2),findall(Encargo2,encargo(_,Personaje2,_),ListaDeEncargos2),length(ListaDeEncargos2,Encargo2), ListaDeEncargos > ListaDeEncargos2.
+
+personajesRespetables(ListaDePersonajes):- personaje(Personaje,_),esRespetable(Personaje), length(ListaDePersonajes,Personaje).
+esRespetable(Personaje):- actividad(Personaje,_),nivelDeRespeto(Personaje,Nivel), Nivel > 9.
+actividad(Personaje,Actividad):- personaje(Personaje,Actividad).
+
+nivelDeRespeto(actriz(CantidadDePeliculas),Nivel):- Nivel is CantidadDePeliculas / 10.
+nivelDeRespeto(mafioso(_),10).
+nivelDeRespeto(maton,1).
+nivelDeRespeto(capo,20).
+
+hartoDe(Personaje1,Personaje2):- personaje(Personaje1,_),personaje(Personaje2,_),encargo(_,Personaje1,cuidad(Personaje2)).
+hartoDe(Personaje1,Personaje2):- personaje(Personaje1,_),personaje(Personaje2,_),encargo(_,Personaje1,buscar(Personaje2)).
+hartoDe(Personaje1,Personaje2):- personaje(Personaje1,_),personaje(Personaje2,_),encargo(_,Personaje1,ayudar(Personaje2)).
+hartoDe(Personaje1,Personaje2):- personaje(Personaje1,_),personaje(Personaje2,_),amigo(Personaje2,_).
+
+caracteristicas(vincent,[negro, muchoPelo, tieneCabeza]).
+caracteristicas(jules,[tieneCabeza, muchoPelo]).
+caracteristicas(marvin,[negro]).
+
+duoDiferenciable(Duo1,Duo2):- caracteristica(Duo1,Caracteristicas),caracteristica(Duo2,Caracteristicas2), Caracteristicas \= Caracteristicas2.
+
+caracteristica(duo1(vicent,jules),Caracteristicas):- Caracteristicas is [negro,muchoPelo,tieneCabeza].
+caracteristica(duo2(jules,mia),Caracteristicas2):- Caracteristicas2 is [tieneCabeza,muchoPelo].
+duo1(Personaje1,Personaje2):- amigo(Personaje1,Personaje2).
+duo2(Personaje1,Personaje2):- pareja(Personaje1,Personaje2).
